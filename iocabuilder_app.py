@@ -120,7 +120,7 @@ def visualize_timeline(iocs):
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="IOCBuilder", layout="wide")
-st.title("🔍 IOCBuilder - IOC Extractor & Enrichment")
+st.title("IOCBuilder - IOC Extractor & Enrichment")
 
 st.markdown("Paste unstructured text or logs containing potential IOCs below.")
 user_input = st.text_area("Threat Report / Paste Raw Data", height=300)
