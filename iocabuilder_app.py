@@ -164,13 +164,13 @@ st.title("IOCBuilder - IOC Extractor & Enrichment")
 st.markdown("""
 Paste unstructured text or logs containing potential IOCs below. Use the sidebar for campaign metadata, past session recall, and shared tokens.
 
-➡️ **Step 1:** Paste your threat report or IOC-rich text.
+**Step 1:** Paste your threat report or IOC-rich text.
 
-➡️ **Step 2:** Add optional campaign tags and notes on the left.
+**Step 2:** Add optional campaign tags and notes on the left.
 
-➡️ **Step 3:** Click **Extract IOCs** to analyze and enrich.
+**Step 3:** Click **Extract IOCs** to analyze and enrich.
 
-⬇️ **Step 4:** Review the breakdown, correlation scores, timeline, and export.
+**Step 4:** Review the breakdown, correlation scores, timeline, and export.
 """)
 
 placeholder_text = """Example:
