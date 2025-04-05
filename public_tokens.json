@@ -1,0 +1,11 @@
+{
+  "example_token": {
+    "timestamp": "2025-04-05T00:00:00Z",
+    "tags": "demo, test",
+    "notes": "This is a public session",
+    "iocs": {
+      "IPv4": ["8.8.8.8"],
+      "Domain": ["domain_exmaple.com"]
+    }
+  }
+}
