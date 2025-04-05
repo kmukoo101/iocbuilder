@@ -3,3 +3,4 @@ pandas
 altair
 requests
 fpdf
+pyyaml
