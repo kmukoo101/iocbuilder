@@ -1,9 +1,9 @@
 # iocabuilder_app.py
 """
-Regex Threat Extractor & IOC Enrichment Tool
+IOCBuilder - Regex Threat Extractor & IOC Enrichment Tool
 
-This is an app for extracting IOCs from unstructured data, logs, reports, 
-and threat intel.
+A powerful open-source Streamlit app for extracting IOCs (Indicators of Compromise)
+from unstructured data, logs, reports, and threat intel.
 
 Supports tagging, enrichment, filtering, visualization, exporting, interactive UI,
 ioc correlation scoring, analyst notes, timeline clustering, PDF export,
@@ -53,7 +53,6 @@ IOC_PATTERNS = {
 }
 
 # --- Functions ---
-
 def extract_iocs(text):
     matches = defaultdict(set)
     for label, pattern in IOC_PATTERNS.items():
@@ -64,8 +63,7 @@ def extract_iocs(text):
 def calculate_ioc_correlation(iocs):
     flat_list = [val for values in iocs.values() for val in values]
     freq = Counter(flat_list)
-    scores = {val: freq[val] for val in flat_list}
-    return scores
+    return {val: freq[val] for val in flat_list}
 
 def generate_pdf_report(iocs, notes, tags):
     pdf = FPDF()
@@ -97,10 +95,8 @@ def save_session(iocs, tags, notes):
     }
     json_path = os.path.join(ARCHIVE_DIR, f"{base_name}.json")
     zip_path = os.path.join(ARCHIVE_DIR, f"{base_name}.zip")
-
     with open(json_path, "w") as f:
         json.dump(session_data, f, indent=2)
-
     with ZipFile(zip_path, 'w') as zipf:
         zipf.write(json_path, arcname=os.path.basename(json_path))
     os.remove(json_path)
@@ -140,12 +136,11 @@ def generate_sigma_rule(iocs):
 def visualize_counts(iocs):
     counts = Counter({k: len(v) for k, v in iocs.items()})
     df = pd.DataFrame(counts.items(), columns=["IOC Type", "Count"])
-    chart = alt.Chart(df).mark_bar().encode(
+    return alt.Chart(df).mark_bar().encode(
         x=alt.X('IOC Type', sort='-y'),
         y='Count',
         color='IOC Type'
     ).properties(title="IOC Type Frequency")
-    return chart
 
 def save_tokenized_public_session(iocs, tags, notes):
     token = str(uuid.uuid4())[:8]
@@ -165,46 +160,28 @@ def load_public_token(token):
 # --- Streamlit UI ---
 st.set_page_config(page_title="IOCBuilder", layout="wide")
 st.title("IOCBuilder - IOC Extractor & Enrichment")
+
 st.markdown("""
-Paste unstructured text or logs containing potential IOCs below. 
-Use the sidebar for campaign metadata, past session recall, and shared tokens.
+Paste unstructured text or logs containing potential IOCs below. Use the sidebar for campaign metadata, past session recall, and shared tokens.
+
+➡️ **Step 1:** Paste your threat report or IOC-rich text.
+
+➡️ **Step 2:** Add optional campaign tags and notes on the left.
+
+➡️ **Step 3:** Click **Extract IOCs** to analyze and enrich.
+
+⬇️ **Step 4:** Review the breakdown, correlation scores, timeline, and export.
 """)
 
-with st.sidebar:
-    st.header("🧷 Campaign Metadata")
-    tags = st.text_input("Tags (comma-separated)")
-    notes = st.text_area("Analyst Notes")
+placeholder_text = """Example:
+Suspicious activity seen from 192.168.1.5 contacting badsite.ru and 104.21.35.64.
+Related email: attacker@mail.ru. Associated CVE-2023-1234.
+SHA256: a9f2e831928f4863eac..."""
 
-    st.markdown("---")
-    st.subheader("📂 Load Previous Sessions")
-    session_files = sorted([f for f in os.listdir(ARCHIVE_DIR) if f.endswith(".zip")], reverse=True)
-    if session_files:
-        chosen = st.selectbox("Select session", session_files)
-        if chosen:
-            with ZipFile(os.path.join(ARCHIVE_DIR, chosen)) as zipf:
-                json_name = zipf.namelist()[0]
-                with zipf.open(json_name) as f:
-                    loaded = json.load(f)
-                    st.markdown(f"**Tags:** {loaded.get('tags')}")
-                    st.markdown(f"**Notes:** {loaded.get('notes')}")
-                    st.json(loaded.get("iocs"))
-    else:
-        st.info("No previous sessions found.")
+user_input = st.text_area("Threat Report / Paste Raw Data", height=300, placeholder=placeholder_text)
+tags = st.sidebar.text_input("Tags (comma-separated)")
+notes = st.sidebar.text_area("Analyst Notes")
 
-    st.markdown("---")
-    st.subheader("🔗 Load Shared Session via Token")
-    shared_token = st.text_input("Public Token")
-    if shared_token:
-        loaded = load_public_token(shared_token)
-        if loaded:
-            st.success(f"Loaded token {shared_token}")
-            st.markdown(f"**Tags:** {loaded.get('tags')}")
-            st.markdown(f"**Notes:** {loaded.get('notes')}")
-            st.json(loaded.get("iocs"))
-        else:
-            st.warning("Invalid token or session not found.")
-
-user_input = st.text_area("Threat Report / Paste Raw Data", height=300)
 if st.button("Extract IOCs"):
     if not user_input.strip():
         st.warning("Please paste some data to analyze.")
@@ -213,8 +190,14 @@ if st.button("Extract IOCs"):
         correlation_scores = calculate_ioc_correlation(results)
         st.success(f"Extraction complete. {sum(len(v) for v in results.values())} IOCs found.")
 
+        if results:
+            st.markdown("**IOC Summary:**")
+            for k, v in results.items():
+                st.markdown(f"- {k}: {len(v)} found")
+
         selected_type = st.multiselect("Filter by IOC Type", list(results.keys()), default=list(results.keys()))
         keyword = st.text_input("Search for specific string")
+
         filtered = {t: [v for v in vs if keyword.lower() in v.lower()] if keyword else vs for t, vs in results.items() if t in selected_type}
 
         for ioc_type, values in filtered.items():
@@ -228,7 +211,7 @@ if st.button("Extract IOCs"):
         st.altair_chart(visualize_timeline(filtered), use_container_width=True)
 
         st.markdown("---")
-        st.subheader("📁 Download Center")
+        st.subheader("Exports and Automation")
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.download_button("Download CSV", export_to_csv(filtered), file_name="iocs.csv", mime="text/csv")
@@ -244,3 +227,33 @@ if st.button("Extract IOCs"):
             pdf_path = generate_pdf_report(filtered, notes, tags)
             with open(pdf_path, "rb") as f:
                 st.download_button("Download PDF Report", f, file_name=os.path.basename(pdf_path))
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("📂 Load Previous Sessions")
+if os.path.exists(ARCHIVE_DIR) and os.path.isdir(ARCHIVE_DIR):
+    session_files = sorted([f for f in os.listdir(ARCHIVE_DIR) if f.endswith(".zip")], reverse=True)
+    if not session_files:
+        st.sidebar.info("No previous sessions found.")
+    else:
+        chosen = st.sidebar.selectbox("Select session", session_files)
+        if chosen:
+            with ZipFile(os.path.join(ARCHIVE_DIR, chosen)) as zipf:
+                json_name = zipf.namelist()[0]
+                with zipf.open(json_name) as f:
+                    loaded = json.load(f)
+                    st.sidebar.markdown(f"**Tags:** {loaded.get('tags')}")
+                    st.sidebar.markdown(f"**Notes:** {loaded.get('notes')}")
+                    st.sidebar.json(loaded.get("iocs"))
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔗 Load Shared Session via Token")
+shared_token = st.sidebar.text_input("Public Token")
+if shared_token:
+    loaded = load_public_token(shared_token)
+    if loaded:
+        st.markdown(f"### Public Session: {shared_token}")
+        st.markdown(f"**Tags:** {loaded.get('tags')}")
+        st.markdown(f"**Notes:** {loaded.get('notes')}")
+        st.json(loaded.get("iocs"))
+    else:
+        st.warning("Invalid token or session not found.")
