@@ -36,7 +36,9 @@ from fpdf import FPDF
 # --- Config ---
 ARCHIVE_DIR = "ioc_sessions"
 PUBLIC_LINKS = "public_tokens.json"
-os.makedirs(ARCHIVE_DIR, exist_ok=True)
+if not os.path.exists(ARCHIVE_DIR):
+    os.mkdir(ARCHIVE_DIR)
+
 
 # --- Regex Patterns ---
 IOC_PATTERNS = {
